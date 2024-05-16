@@ -3,7 +3,7 @@ import { ControllerConfig } from '../../types/controllers';
 import { Request, Response } from 'express';
 import { ParseGetVehicleStateByTimeRequest } from './validators';
 import { ServiceError } from '../../utils/Errors/Error';
-import { Vehicles as VehicleService } from '../../services/vehicles/vehicles';
+import { Vehicles as VehicleService } from '../../services/vehicles/service';
 
 interface GetVehicleStateByTimeRequest {
 	id: string;
@@ -46,7 +46,7 @@ export class Vehicles {
 				await this.service.getVehicleStateByTime(cleanPayload);
 
 			return res.status(200).json({
-				data: vehicleData,
+				vehicle: vehicleData,
 			});
 		} catch (error) {
 			this.log.error(`Request ID: ${req.requestId} - Error: ${error}`);

@@ -1,7 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
-import pool from './config/database';
-import Vehicles from './types/public/Vehicles';
 import helmet from 'helmet';
 import { newConfig } from './config/config';
 import requestIdMiddleware from './middleware/requestIdMiddleware';

@@ -1,7 +1,6 @@
 /* eslint-disable */
-const { getConnectionOptions } = require('kanel')
 const { generateZodSchemas } = require("kanel-zod");
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
 
 dotenv.config()
 
@@ -13,7 +12,7 @@ module.exports = {
 		password: process.env.DB_PASSWORD,
 		port: parseInt(process.env.DB_PORT || '5432', 10),
 	},
-	outputPath: './src/types',
+	outputPath: './src/generated/types',
 	preDeleteOutputFolder: true,
 	preRenderHooks: [generateZodSchemas],
 }
