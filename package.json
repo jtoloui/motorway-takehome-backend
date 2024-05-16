@@ -7,8 +7,8 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "start": "node dist/index.js",
-    "dev": "NODE_ENV=development concurrently \"webpack --config webpack.config.js\" \"nodemon --watch dist --exec node dist/bundle.js\"",
+    "start": "node dist/bundle.js",
+    "dev": "TZ=UTC NODE_ENV=development concurrently \"webpack --config webpack.config.js\" \"nodemon --watch dist --exec node dist/bundle.js\"",
     "build": "NODE_ENV=production webpack --config webpack.config.js",
     "generate:types": "kanel"
   },

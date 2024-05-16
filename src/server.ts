@@ -5,6 +5,7 @@ import Vehicles from './types/public/Vehicles';
 import helmet from 'helmet';
 import { newConfig } from './config/config';
 import requestIdMiddleware from './middleware/requestIdMiddleware';
+import { router } from './routes';
 
 const config = newConfig.getInstance().validate().getConfig();
 
@@ -39,16 +40,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 	next();
 });
 
-app.get('/', async (req, res) => {
-	try {
-		const query = await pool.query<Vehicles>('select * from vehicles');
-		res.status(200).json({
-			message: 'Success',
-			data: query.rows,
-		});
-	} catch (error) {
-		console.log(error);
-	}
-});
+app.use(
+	router({
+		loggerInstance: config.newLogger,
+		logLevel: config.LOG_LEVEL,
+	}),
+);
 
 export default app;
