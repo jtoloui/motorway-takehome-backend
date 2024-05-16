@@ -8,6 +8,6 @@
     "outDir": "./dist",
     "rootDir": "./src"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "custom.d.ts"],
   "exclude": ["node_modules", "scripts/build.js", "scripts/watch.js"]
 }

@@ -1,10 +1,11 @@
-import dotenv from 'dotenv';
-
 import app from './server';
+import { newConfig } from './config/config';
 
-dotenv.config();
-const PORT = process.env.PORT || 3000;
+// Load in config from the env and validate schema is correct before starting the server
+const config = newConfig.getInstance().validate().getConfig();
+
+const PORT = config.PORT;
 
 app.listen(PORT, () => {
-	console.log(`Server is running on port ${PORT}`);
+	config.log.info(`Server is running on http://localhost:${PORT}`);
 });
