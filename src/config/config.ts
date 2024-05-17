@@ -15,6 +15,7 @@ export const ConfigSchema = z.object({
 	PORT: z.number(),
 	log: z.instanceof(Logger),
 	newLogger: LoggerSchema,
+	MEMCACHE_SERVERS: z.string(),
 });
 
 export type ConfigType = z.infer<typeof ConfigSchema>;
@@ -76,6 +77,7 @@ export class newConfig {
 			PORT: Number(process.env.PORT) || 3000,
 			log: this.log,
 			newLogger: logger,
+			MEMCACHE_SERVERS: process.env.MEMCACHE_SERVERS || '',
 		};
 	}
 

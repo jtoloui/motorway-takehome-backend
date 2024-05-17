@@ -4,11 +4,19 @@ import { Request, Response } from 'express';
 import { ParseGetVehicleStateByTimeRequest } from './validators';
 import { ServiceError } from '../../utils/Errors/Error';
 import { Vehicles as VehicleService } from '../../services/vehicles/service';
+import { VehicleStateByTimeQueryResult } from '../../store/vehicles/store';
 
 interface GetVehicleStateByTimeRequest {
 	id: string;
 	timestamp: string;
 }
+
+type GetVehicleStateByTimeResponse = {
+	id: number;
+	make: string;
+	model: string;
+	state: string;
+};
 
 export class Vehicles {
 	private static instance: Vehicles;
@@ -46,7 +54,7 @@ export class Vehicles {
 				await this.service.getVehicleStateByTime(cleanPayload);
 
 			return res.status(200).json({
-				vehicle: vehicleData,
+				...this.getVehicleStateByTimeResponseMapper(vehicleData),
 			});
 		} catch (error) {
 			this.log.error(`Request ID: ${req.requestId} - Error: ${error}`);
@@ -61,5 +69,16 @@ export class Vehicles {
 				message: 'Internal Server Error',
 			});
 		}
+	};
+
+	private getVehicleStateByTimeResponseMapper = (
+		vehicleData: VehicleStateByTimeQueryResult,
+	): GetVehicleStateByTimeResponse => {
+		return {
+			id: vehicleData.id,
+			make: vehicleData.make,
+			model: vehicleData.model,
+			state: vehicleData.state,
+		};
 	};
 }

@@ -1,35 +1,44 @@
 import { Logger } from 'winston';
 import { ControllerConfig } from '../../types/controllers';
-import { Pool } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import pool from '../../config/database';
 import { ServiceError } from '../../utils/Errors/Error';
 import Vehicles from '../../generated/types/public/Vehicles';
 
+/**
+ * Gone for a CTE approach to get the state of the vehicle at a given time.
+ * The query will look at the time and what is less or equal while also ordering
+ * the seller logs in descending order of the timestamp
+ * if the timestamp given is much less that the first seller log no records are returned
+ * 								|--------------|------------------|------------------
+ * <not found>		|quoted				 |selling						|sold and beyond
+ */
 const GET_VEHICLE_STATE_BY_TIME_QUERY = `
 WITH StateLogsCTE AS (
 	SELECT
 		sl. "vehicleId",
 		sl. "state",
-		sl. "timestamp",
-		ABS(EXTRACT(EPOCH FROM (sl.timestamp - $1::timestamp))) AS time_diff
+		sl. "timestamp"
 	FROM
 		"stateLogs" sl
 	WHERE
 		sl. "vehicleId" = $2
+		AND sl. "timestamp" <= $1::TIMESTAMP
+	ORDER BY
+		sl. "timestamp" DESC
+	LIMIT 1
 )
 SELECT
-	v.id, v.make, v.model, sl. "state", sl. "timestamp"
+	v.id,
+	v.make,
+	v.model,
+	sl. "state",
+	sl. "timestamp"
 FROM
 	vehicles v
-	JOIN (
-		SELECT
-			state,
-			timestamp
-		FROM
-			StateLogsCTE
-		ORDER BY
-			time_diff
-		LIMIT 1) sl ON v.id = $2;
+	JOIN StateLogsCTE sl ON v.id = sl. "vehicleId"
+WHERE
+	v.id = $2;
 `;
 
 export type VehicleStateByTimeQueryResult = {
@@ -57,19 +66,22 @@ export class Store {
 		return Store.instance;
 	}
 
-	public getVehicleStateByTime = async ({
-		id,
-		timestamp,
-	}: {
-		id: number;
-		timestamp: string;
-	}): Promise<VehicleStateByTimeQueryResult | string> => {
+	public getVehicleStateByTime = async (
+		client: PoolClient,
+		{
+			id,
+			timestamp,
+		}: {
+			id: number;
+			timestamp: string;
+		},
+	): Promise<VehicleStateByTimeQueryResult> => {
 		try {
 			this.log.info(
 				`Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
 			);
 
-			const { rows } = await this.pool.query<VehicleStateByTimeQueryResult>(
+			const { rows } = await client.query<VehicleStateByTimeQueryResult>(
 				GET_VEHICLE_STATE_BY_TIME_QUERY,
 				[timestamp, id],
 			);
@@ -89,15 +101,18 @@ export class Store {
 				throw error;
 			}
 
-			return 'Internal Server Error';
+			throw new Error('Internal Server Error');
 		}
 	};
 
-	public getVehicleById = async (id: number): Promise<Vehicles | string> => {
+	public getVehicleById = async (
+		client: PoolClient,
+		id: number,
+	): Promise<Vehicles> => {
 		try {
 			this.log.info(`Vehicle ID: ${id} - Get Vehicle By ID`);
 
-			const { rows } = await this.pool.query<Vehicles>(
+			const { rows } = await client.query<Vehicles>(
 				'SELECT * FROM vehicles WHERE id = $1',
 				[id],
 			);
@@ -117,7 +132,44 @@ export class Store {
 				throw error;
 			}
 
-			return 'Internal Server Error';
+			throw new Error('Internal Server Error');
 		}
 	};
+
+	public withTransaction = async <T>(
+		callback: (client: PoolClient) => Promise<T>,
+	): Promise<T> => {
+		const client = await this.getClient();
+		try {
+			this.log.info('Starting transaction');
+			const result = await callback(client);
+			await this.commit(client);
+			this.log.info('Transaction committed');
+			return result;
+		} catch (error) {
+			await this.rollback(client);
+			this.log.error(`Transaction rolled back - Error: ${error}`);
+			throw error;
+		}
+	};
+
+	public async closePool() {
+		await this.pool.end();
+	}
+
+	private async getClient(): Promise<PoolClient> {
+		const client = await this.pool.connect();
+		await client.query('BEGIN');
+		return client;
+	}
+
+	private async commit(client: PoolClient): Promise<void> {
+		await client.query('COMMIT');
+		client.release();
+	}
+
+	private async rollback(client: PoolClient): Promise<void> {
+		await client.query('ROLLBACK');
+		client.release();
+	}
 }

@@ -1,10 +1,10 @@
-import winston, { Logger } from 'winston';
+import winston from 'winston';
 import { z } from 'zod';
 
 export const LoggerSchema = z
 	.function()
 	.args(z.string(), z.string())
-	.returns(z.instanceof(Logger));
+	.returns(z.instanceof(winston.Logger));
 
 export type newLoggerType = z.infer<typeof LoggerSchema>;
 
@@ -21,11 +21,9 @@ export const logger: newLoggerType = (logLvl, label) =>
 			winston.format.label({ label }),
 			winston.format.prettyPrint(),
 			winston.format.splat(),
-			winston.format.printf(
-				({ timestamp, level, message, label, ...props }) => {
-					return `${timestamp} [${label}] ${level}: ${message}`;
-				},
-			),
+			winston.format.printf(({ timestamp, level, message, label }) => {
+				return `${timestamp} [${label}] ${level}: ${message}`;
+			}),
 		),
 		transports: [new winston.transports.Console({})],
 	});

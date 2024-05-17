@@ -1,6 +1,6 @@
 type cause = {
 	status: number;
-	message: any;
+	message: unknown;
 };
 
 export class ServiceError extends Error {
@@ -11,7 +11,6 @@ export class ServiceError extends Error {
 		this.name = 'ServiceError';
 		this.cause = cause;
 
-		// Maintaining proper stack trace for where our error was thrown (only available on V8)
 		if (Error.captureStackTrace) {
 			Error.captureStackTrace(this, this.constructor);
 		}
