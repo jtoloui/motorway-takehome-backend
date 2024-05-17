@@ -6,7 +6,7 @@ import { ServiceError } from '../../utils/Errors/Error';
 import { Vehicles as VehicleService } from '../../services/vehicles/service';
 import { VehicleStateByTimeQueryResult } from '../../store/vehicles/store';
 
-interface GetVehicleStateByTimeRequest {
+export interface GetVehicleStateByTimeRequest {
 	id: string;
 	timestamp: string;
 }

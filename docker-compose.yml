@@ -26,6 +26,11 @@ services:
     ports:
       - 5433:5432
   app:
+    depends_on:
+      - db
+      - memcached
+      - jaeger
+      - otel-collector
     build:
       context: .
       dockerfile: Dockerfile.server
@@ -35,10 +40,28 @@ services:
       - PORT=4001
       - DB_HOST=db
       - MEMCACHE_SERVERS=memcached:11211
+      - OTEL_EXPORTER_JAEGER_ENDPOINT=http://jaeger:4318/api/traces
     env_file:
       - .env
     volumes:
       - .:/usr/src/app
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    ports:
+      - '16686:16686'
+      - '14268:14268'
+  otel-collector:
+    depends_on:
+      - jaeger
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    ports:
+      - '4317:4317' # gRPC receiver
+      - '4318:4318' # HTTP receiver
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    command: ['--config=/etc/otel-collector-config.yml']
 
   memcached:
     image: bitnami/memcached

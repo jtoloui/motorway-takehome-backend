@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Vehicles } from '../controllers/vehicles/vehicles';
 import { ControllerConfig } from '../types/controllers';
+import { traceWithDefer } from '../tracing/utils/utils';
 
 export const router = (config: ControllerConfig): Router => {
 	const VehiclesController = Vehicles.getInstance(config);
@@ -9,7 +10,7 @@ export const router = (config: ControllerConfig): Router => {
 
 	routes.get(
 		'/vehicles/:id/state/:timestamp',
-		VehiclesController.getVehicleStateByTime,
+		traceWithDefer(VehiclesController.getVehicleStateByTime),
 	);
 
 	return routes;
