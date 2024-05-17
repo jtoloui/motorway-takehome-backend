@@ -1,7 +1,7 @@
 {
   "name": "motorway-takehome-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "This service allows you to lookup a given vehicle based on a time frame to see it's seller state history",
   "engines": {
     "node": ">=20.0.0"
   },
