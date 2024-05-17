@@ -48,10 +48,10 @@ app.use(
 	}),
 );
 
-// if (process.env.NODE_ENV === 'development') {
-// 	console.log(process.env.NODE_ENV);
-// }
-app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+if (process.env.NODE_ENV === 'development') {
+	console.log(process.env.NODE_ENV);
+	app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 // 404 for any unknown routes
 app.use('*', (req: Request, res: Response) => {

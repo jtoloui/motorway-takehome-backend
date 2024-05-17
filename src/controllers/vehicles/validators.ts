@@ -5,6 +5,9 @@ const GetVehicleStateByTimeRequest = z.object({
 	id: z
 		.string()
 		.min(1)
+		.refine((val) => /^\d+$/.test(val), {
+			message: 'Invalid input',
+		})
 		.refine((id) => {
 			return !isNaN(parseInt(id, 10));
 		}),

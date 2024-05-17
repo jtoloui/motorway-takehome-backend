@@ -13,7 +13,9 @@
     "generate:types": "kanel",
     "test": "TZ=UTC jest --detectOpenHandles --forceExit",
     "test:watch": "TZ=UTC jest --watch --detectOpenHandles",
-    "swagger-autogen": "node swagger.js"
+    "swagger-autogen": "node swagger.js",
+    "prettier": "prettier --check \"**/*.ts\"",
+    "prettier:fix": "prettier --write \"**/*.ts\""
   },
   "keywords": [],
   "author": "Jamie Toloui",

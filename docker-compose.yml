@@ -30,9 +30,9 @@ services:
       context: .
       dockerfile: Dockerfile.server
     ports:
-      - '${PORT}:${PORT}'
+      - '4001:4001'
     environment:
-      - PORT=${PORT}
+      - PORT=4001
       - DB_HOST=db
       - MEMCACHE_SERVERS=memcached:11211
     env_file:
