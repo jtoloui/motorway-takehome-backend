@@ -4,6 +4,8 @@ import helmet from 'helmet';
 import { newConfig } from './config/config';
 import requestIdMiddleware from './middleware/requestIdMiddleware';
 import { router } from './routes';
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from '../docs/swagger_output.json';
 
 const config = newConfig.getInstance().validate().getConfig();
 
@@ -45,6 +47,11 @@ app.use(
 		logLevel: config.LOG_LEVEL,
 	}),
 );
+
+// if (process.env.NODE_ENV === 'development') {
+// 	console.log(process.env.NODE_ENV);
+// }
+app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // 404 for any unknown routes
 app.use('*', (req: Request, res: Response) => {

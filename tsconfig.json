@@ -6,7 +6,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts", "custom.d.ts"],
   "exclude": ["node_modules", "scripts/build.js", "scripts/watch.js"]

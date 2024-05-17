@@ -1,0 +1,34 @@
+FROM docker.io/node:20-alpine3.18 AS builder
+
+WORKDIR /usr/src/app
+
+ENV TZ=UTC
+
+COPY package*.json ./
+
+# Install from the lock file to ensure the same dependencies are installed
+RUN npm ci --silent
+
+COPY . .
+
+RUN npm run build
+
+
+FROM docker.io/node:20-alpine3.18
+
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=production
+ENV TZ=UTC
+
+COPY package*.json ./
+
+RUN npm ci --silent
+
+COPY --from=builder /usr/src/app/dist ./dist
+
+RUN chown -R node:node /usr/src/app
+
+USER node
+
+CMD ["node", "dist/bundle.js"]

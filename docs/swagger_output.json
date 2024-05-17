@@ -1,0 +1,126 @@
+{
+  "openapi": "3.0.0",
+	"info": {
+		"version": "1.0.0",
+		"title": "Vehicle Seller Logs API",
+		"description": "API Docs for the Vehicle seller logs system. This provides a way to retrieve the state of a vehicle at a given timestamp."
+	},
+  "servers": [
+    {
+      "url": "http://localhost:{port}/api/v1",
+      "variables": {
+        "port": {
+          "default": "4000"
+        }
+      }
+    }
+  ],
+	"paths": {
+		"/vehicles/{id}/state/{timestamp}": {
+			"get": {
+        "tags": ["Vehicle"],
+        "description": "Retrieve the state of a vehicle at a given timestamp \n",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "3"
+            }
+          },
+          {
+            "name": "timestamp",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "2024-09-11T17:21:37+00:00",
+              "format": "date-time",
+              "description": "The timestamp requires you to format in ISO 8601 format. Example: 2024-09-11T17:21:37+00:00"
+            }
+          }
+        ],
+				"responses": {
+          "200": {
+            "description": "Retrieve the state of a vehicle at a given timestamp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleState"
+                }
+              }
+            }
+					},
+					"404": {
+						"description": "Vehicle not found or no state found for the given timestamp",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/404"
+                }
+              }
+            }
+					},
+					"400": {
+						"description": "Invalid Input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/400"
+                }
+              }
+            }
+					}
+				}
+			}
+		}
+	},
+	"components": {
+    "schemas": {
+		"VehicleState": {
+      "title": "Vehicle State",
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "number",
+					"example": 1
+				},
+				"make": {
+					"type": "string",
+					"example": "BMW"
+				},
+				"model": {
+					"type": "string",
+					"example": "X5"
+				},
+				"state": {
+					"type": "string",
+					"example": "sold"
+				}
+			}
+		},
+		"400": {
+      "title": "Invalid Input",
+			"type": "object",
+			"properties": {
+				"error": {
+					"type": "string",
+					"example": "Invalid timestamp"
+				}
+			}
+		},
+		"404": {
+      "title": "Not Found",
+			"type": "object",
+			"properties": {
+				"error": {
+					"type": "string",
+					"example": "Vehicle not found or no state found for the given timestamp"
+				}
+			}
+		}
+  }
+	}
+}

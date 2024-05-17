@@ -12,7 +12,8 @@
     "build": "NODE_ENV=production webpack --config webpack.config.js",
     "generate:types": "kanel",
     "test": "TZ=UTC jest --detectOpenHandles --forceExit",
-    "test:watch": "TZ=UTC jest --watch --detectOpenHandles"
+    "test:watch": "TZ=UTC jest --watch --detectOpenHandles",
+    "swagger-autogen": "node swagger.js"
   },
   "keywords": [],
   "author": "Jamie Toloui",
@@ -39,6 +40,7 @@
     "@types/memjs": "^1.3.3",
     "@types/pg": "^8.11.6",
     "@types/supertest": "^6.0.2",
+    "@types/swagger-ui-express": "^4.1.6",
     "@types/uuid": "^9.0.8",
     "concurrently": "^8.2.2",
     "eslint": "^8.57.0",
@@ -49,6 +51,7 @@
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
     "supertest": "^7.0.0",
+    "swagger-ui-express": "^5.0.0",
     "ts-jest": "^29.1.2",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
