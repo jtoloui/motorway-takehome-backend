@@ -41,3 +41,5 @@ registerInstrumentations({
 });
 
 opentelemetry.trace.getTracer(serviceName);
+
+console.log(`Tracing initialized for service: ${serviceName}`);
