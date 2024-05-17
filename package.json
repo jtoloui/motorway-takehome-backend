@@ -11,7 +11,8 @@
     "dev": "TZ=UTC NODE_ENV=development concurrently \"webpack --config webpack.config.js\" \"nodemon --watch dist --exec node dist/bundle.js\"",
     "build": "NODE_ENV=production webpack --config webpack.config.js",
     "generate:types": "kanel",
-    "test": "TZ=UTC jest --detectOpenHandles --forceExit"
+    "test": "TZ=UTC jest --detectOpenHandles --forceExit",
+    "test:watch": "TZ=UTC jest --watch --detectOpenHandles"
   },
   "keywords": [],
   "author": "Jamie Toloui",

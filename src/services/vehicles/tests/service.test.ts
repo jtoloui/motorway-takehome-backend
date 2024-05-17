@@ -3,11 +3,6 @@ import { Vehicles } from '../service';
 import logger from '../../../config/logger';
 import { VehicleStateByTimeQueryResult } from '../../../store/vehicles/store';
 
-jest.mock('winston', () => {
-	const winston = jest.requireActual('winston');
-	winston.transports.Console.prototype.log = jest.fn();
-	return winston;
-});
 const config: ControllerConfig = {
 	loggerInstance: (level, name) => logger(level, name),
 	logLevel: '',

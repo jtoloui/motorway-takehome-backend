@@ -25,6 +25,12 @@ global.cacheClient = Memcached.Client.create(
 	},
 );
 
+jest.mock('winston', () => {
+	const winston = jest.requireActual('winston');
+	winston.transports.Console.prototype.log = jest.fn();
+	return winston;
+});
+
 // Handle process exit and flush the cache
 process.on('exit', async () => {
 	await global.dbClient.end();
