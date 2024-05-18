@@ -60,6 +60,6 @@ describe('Vehicles Controller', () => {
 	test('GET /unknown', async () => {
 		const response = await request(app).get('/anything');
 		expect(response.status).toBe(404);
-		expect(response.body).toEqual({ message: 'Not Found' });
+		expect(response.body).toEqual({ error: 'Not Found' });
 	});
 });

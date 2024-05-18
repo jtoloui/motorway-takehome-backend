@@ -2,8 +2,8 @@ import { Logger } from 'winston';
 import memjs from 'memjs';
 import { ControllerConfig } from '../../types/controllers';
 import { newConfig } from '../../config/config';
-import { tracer } from '../../tracing/tracer';
-import { SpanKind, SpanStatusCode, context } from '@opentelemetry/api';
+import { SpanStatusCode } from '@opentelemetry/api';
+import { tracerWrapper } from '../../tracing/utils/utils';
 
 const envConfig = newConfig.getInstance().getConfig();
 
@@ -38,63 +38,47 @@ export class Memcache {
 		value: string,
 		ttl = 600,
 	): Promise<boolean> => {
-		const span = tracer.startSpan(
-			'memcache.set',
-			{
-				kind: SpanKind.CLIENT,
-				attributes: { 'memcache.key': key },
-			},
-			context.active(),
-		);
-
-		try {
-			this.log.info(`Setting key: ${key}`);
-			span.setStatus({ code: SpanStatusCode.OK });
-			await this.memcacheClient.set(key, value, { expires: ttl });
-			return true;
-		} catch (error) {
-			const err = new Error(`Error setting key: ${key} - ${error}`);
-			span.recordException(err);
-			span.setStatus({ code: SpanStatusCode.ERROR, message: err.message }); // Set status to ERROR
-			this.log.error(`Error setting key: ${key} - ${error}`);
-			return false;
-		} finally {
-			span.end();
-		}
+		return tracerWrapper<boolean>('Setting Memcache Key', async (span) => {
+			try {
+				this.log.info(`Setting key: ${key}`);
+				span.setAttribute('memcache.key', key);
+				await this.memcacheClient.set(key, value, { expires: ttl });
+				return true;
+			} catch (error) {
+				const err = new Error(`Error setting key: ${key} - ${error}`);
+				this.log.error(`Error setting key: ${key} - ${error}`);
+				span.recordException(err);
+				span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+				return false;
+			}
+		});
 	};
 
 	public get = async <T>(key: string): Promise<T | null> => {
-		const span = tracer.startSpan(
-			'memcache.get',
-			{
-				kind: SpanKind.CLIENT,
-				attributes: { 'memcache.key': key },
-			},
-			context.active(),
-		);
-		try {
-			this.log.info(`Getting key: ${key}`);
-			const { value } = await this.memcacheClient.get(key);
-			this.memcacheClient.close();
-			if (!value) {
-				this.log.info(`Key: ${key} not found`);
+		return tracerWrapper<T | null>('Getting Memcache Key', async (span) => {
+			try {
+				this.log.info(`Getting key: ${key}`);
+				span.setAttribute('memcache.key', key);
+				const { value } = await this.memcacheClient.get(key);
+				this.memcacheClient.close();
+				if (!value) {
+					this.log.info(`Key: ${key} not found`);
+					span.setStatus({ code: SpanStatusCode.OK });
+					return null;
+				}
+
+				const jsonObject: T = JSON.parse(value.toString());
 				span.setStatus({ code: SpanStatusCode.OK });
+				span.setAttribute('memcache.value', value.toString());
+				return jsonObject;
+			} catch (error) {
+				const err = new Error(`Error getting key: ${key} - ${error}`);
+				span.recordException(err);
+				span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+				this.log.error(`Error getting key: ${key} - ${error}`);
 				return null;
 			}
-
-			const jsonObject: T = JSON.parse(value.toString());
-			span.setStatus({ code: SpanStatusCode.OK });
-			span.setAttribute('memcache.value', value.toString());
-			return jsonObject;
-		} catch (error) {
-			const err = new Error(`Error getting key: ${key} - ${error}`);
-			span.recordException(err);
-			span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
-			this.log.error(`Error getting key: ${key} - ${error}`);
-			return null;
-		} finally {
-			span.end();
-		}
+		});
 	};
 
 	public async flush(): Promise<void> {

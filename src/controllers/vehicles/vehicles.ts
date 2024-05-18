@@ -1,30 +1,16 @@
 import { Logger } from 'winston';
-import { ControllerConfig } from '../../types/controllers';
-import { Request, Response } from 'express';
+import {
+	ControllerConfig,
+	GetVehicleStateByTimeRequest,
+	GetVehicleStateByTimeResponse,
+} from '../../types/controllers';
+import { Response } from 'express';
 import { ParseGetVehicleStateByTimeRequest } from './validators';
 import { ServiceError } from '../../utils/Errors/Error';
 import { Vehicles as VehicleService } from '../../services/vehicles/service';
 import { VehicleStateByTimeQueryResult } from '../../store/vehicles/store';
 import { tracer } from '../../tracing/tracer';
 import { context } from '@opentelemetry/api';
-
-export interface ParamsDictionary {
-	[key: string]: string;
-}
-interface GetVehicleStateByTimeParams extends ParamsDictionary {
-	id: string;
-	timestamp: string;
-}
-
-export interface GetVehicleStateByTimeRequest
-	extends Request<GetVehicleStateByTimeParams> {}
-
-type GetVehicleStateByTimeResponse = {
-	id: number;
-	make: string;
-	model: string;
-	state: string;
-};
 
 export class Vehicles {
 	private static instance: Vehicles;
@@ -36,6 +22,7 @@ export class Vehicles {
 		this.service = VehicleService.getInstance(config);
 	}
 
+	// Prevents the creation of multiple instances of the Vehicles class
 	public static getInstance(config: ControllerConfig): Vehicles {
 		if (!Vehicles.instance) {
 			Vehicles.instance = new Vehicles(config);
@@ -43,16 +30,19 @@ export class Vehicles {
 		return Vehicles.instance;
 	}
 
+	/**
+	 * Get Vehicle State By Time frame
+	 */
 	public getVehicleStateByTime = async (
 		req: GetVehicleStateByTimeRequest,
 		res: Response,
 	): Promise<Response> => {
+		const span = tracer.startSpan(
+			'getVehicleStateByTime',
+			undefined,
+			context.active(),
+		);
 		try {
-			const span = tracer.startSpan(
-				'getVehicleStateByTime',
-				undefined,
-				context.active(),
-			);
 			const { id, timestamp } = req.params;
 			this.log.info(
 				`Request ID: ${req.requestId} - Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
@@ -66,9 +56,11 @@ export class Vehicles {
 			const vehicleData =
 				await this.service.getVehicleStateByTime(cleanPayload);
 
-			span.end();
+			const response =
+				await this.getVehicleStateByTimeResponseMapper(vehicleData);
+
 			return res.status(200).json({
-				...this.getVehicleStateByTimeResponseMapper(vehicleData),
+				...response,
 			});
 		} catch (error) {
 			this.log.error(`Request ID: ${req.requestId} - Error: ${error}`);
@@ -82,24 +74,33 @@ export class Vehicles {
 			return res.status(500).json({
 				message: 'Internal Server Error',
 			});
+		} finally {
+			span.end();
 		}
 	};
 
-	private getVehicleStateByTimeResponseMapper = (
+	/**
+	 * Mapper for the GetVehicleStateByTimeResponse
+	 * Allows more control over the response object
+	 */
+	private getVehicleStateByTimeResponseMapper = async (
 		vehicleData: VehicleStateByTimeQueryResult,
-	): GetVehicleStateByTimeResponse => {
+	): Promise<GetVehicleStateByTimeResponse> => {
 		const span = tracer.startSpan(
 			'getVehicleStateByTimeResponseMapper',
 			undefined,
 			context.active(),
 		);
-
-		span.end();
-		return {
-			id: vehicleData.id,
-			make: vehicleData.make,
-			model: vehicleData.model,
-			state: vehicleData.state,
-		};
+		try {
+			span.end();
+			return {
+				id: vehicleData.id,
+				make: vehicleData.make,
+				model: vehicleData.model,
+				state: vehicleData.state,
+			};
+		} finally {
+			span.end();
+		}
 	};
 }

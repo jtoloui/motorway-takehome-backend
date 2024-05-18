@@ -20,6 +20,7 @@ type RouteHandler<T extends Request, U> = (
 	next: NextFunction,
 ) => Promise<U>;
 
+// Add attributes and events to the current span
 export function addDetailsToCurrentSpan(
 	attributes?: Attributes,
 	events?: Event[],
@@ -40,7 +41,7 @@ export function addDetailsToCurrentSpan(
 }
 
 // Router middleware to mimic similar go patterns for a defer trace log
-export function traceWithDefer<T extends Request, U>(
+export function traceWithDeferRouter<T extends Request, U extends Response>(
 	func: RouteHandler<T, U>,
 	spanName: string,
 ): RouteHandler<T, U> {
@@ -52,9 +53,18 @@ export function traceWithDefer<T extends Request, U>(
 		const span = tracer.startSpan(spanName, undefined, context.active());
 
 		try {
-			return await context.with(trace.setSpan(context.active(), span), () =>
-				func(req, res, next),
+			const routerResult = await context.with(
+				trace.setSpan(context.active(), span),
+				() => func(req, res, next),
 			);
+
+			if (routerResult.statusCode >= 400) {
+				span.setStatus({
+					code: SpanStatusCode.ERROR,
+					message: res.statusMessage,
+				});
+			}
+			return routerResult;
 		} catch (error) {
 			if (error instanceof Error || error instanceof ServiceError) {
 				span.setStatus({
@@ -72,11 +82,41 @@ export function traceWithDefer<T extends Request, U>(
 }
 
 export function setSpanStatus(status: SpanStatusCode, message: string): void {
-	let span = tracer.startSpan(message, undefined, context.active());
+	const span = tracer.startSpan(message, undefined, context.active());
 	span.setStatus({
 		code: status,
 		message,
 	});
 
 	span.end();
+}
+
+/**
+ * Unlike the `traceWithDefer` function, this function is used to wrap a function
+ * with a span and trace the function's execution.
+ */
+export async function tracerWrapper<T>(
+	spanName: string,
+	fn: (span: Span) => Promise<T>,
+): Promise<T> {
+	const span = tracer.startSpan(spanName, undefined, context.active());
+
+	try {
+		return await context.with(trace.setSpan(context.active(), span), () =>
+			fn(span),
+		);
+	} catch (error) {
+		if (error instanceof Error || error instanceof ServiceError) {
+			span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+			span.recordException(error);
+			throw error;
+		}
+
+		const err = new Error(`Error: ${error}`);
+		span.recordException(err);
+		span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+		throw error;
+	} finally {
+		span.end();
+	}
 }

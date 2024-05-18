@@ -32,12 +32,12 @@ describe('Vehicles Store', () => {
 		});
 	});
 
-	test('look up vehicle by ID - failure', async () => {
-		await expect(
-			store.withTransaction(async (client) => {
-				return store.getVehicleById(client, 100);
-			}),
-		).rejects.toThrow('Vehicle not found');
+	test('look up vehicle by ID - nothing returned', async () => {
+		const results = await store.withTransaction(async (client) => {
+			return store.getVehicleById(client, 100);
+		});
+
+		expect(results).toBeUndefined();
 	});
 
 	test('look up vehicle state by time - time above the last seller record', async () => {
@@ -78,14 +78,13 @@ describe('Vehicles Store', () => {
 		});
 	});
 
-	test('look up a seller record before it was quoted', async () => {
-		await expect(
-			store.withTransaction(async (client) => {
-				return store.getVehicleStateByTime(client, {
-					id: 3,
-					timestamp: '1970-09-11 23:21:37+00',
-				});
-			}),
-		).rejects.toThrow('Seller information not found');
+	test('look up a seller record before it was quoted - return empty results', async () => {
+		const result = await store.withTransaction(async (client) => {
+			return store.getVehicleStateByTime(client, {
+				id: 3,
+				timestamp: '1970-09-11 23:21:37+00',
+			});
+		});
+		expect(result).toBeUndefined();
 	});
 });

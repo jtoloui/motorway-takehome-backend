@@ -6,7 +6,10 @@ import {
 	VehicleStateByTimeQueryResult,
 } from '../../store/vehicles/store';
 import { Memcache } from '../../utils/Memcache/Memcache';
-import { addDetailsToCurrentSpan } from '../../tracing/utils/utils';
+import {
+	addDetailsToCurrentSpan,
+	tracerWrapper,
+} from '../../tracing/utils/utils';
 
 export class Vehicles {
 	private static instance: Vehicles;
@@ -34,64 +37,81 @@ export class Vehicles {
 		id: number;
 		timestamp: string;
 	}): Promise<VehicleStateByTimeQueryResult> => {
-		try {
-			this.log.info(
-				`Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
-			);
-			const cacheKey = `vehicle-state-${id}-${timestamp}`;
-			const cachedValue =
-				await this.cacheStore.get<VehicleStateByTimeQueryResult>(cacheKey);
-
-			if (cachedValue) {
-				/**
-				 * Caching layer and check
-				 * this is just a simple example of how to extend the tracing further
-				 * manually if there isn't a supported instrumentation library
-				 */
-				addDetailsToCurrentSpan(
-					{
-						'cache-lookup': true,
-					},
-					[
-						{
-							name: 'cache-lookup',
-							attributes: {
-								'cache-key': `vehicle-state-${id}-${timestamp}`,
-							},
-						},
-					],
-				);
+		return tracerWrapper<VehicleStateByTimeQueryResult>(
+			'Service - getVehicleStateByTime',
+			async () => {
 				this.log.info(
-					`Vehicle ID: ${id} - Timestamp: ${timestamp} - Cache Hit`,
+					`Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
 				);
-				return cachedValue;
-			}
-			addDetailsToCurrentSpan({
-				'cache-lookup': false,
-			});
-			const vehicleState = await this.store.withTransaction(async (client) => {
-				await this.store.getVehicleById(client, id);
-				const vehicleStateResult = await this.store.getVehicleStateByTime(
-					client,
-					{
-						id,
-						timestamp,
+				const cacheKey = `vehicle-state-${id}-${timestamp}`;
+				const cachedValue =
+					await this.cacheStore.get<VehicleStateByTimeQueryResult>(cacheKey);
+
+				if (cachedValue) {
+					/**
+					 * Caching layer and check
+					 * this is just a simple example of how to extend the tracing further
+					 * manually if there isn't a supported instrumentation library
+					 */
+					addDetailsToCurrentSpan(
+						{
+							'cache-hit': true,
+						},
+						[
+							{
+								name: 'cache-lookup',
+								attributes: {
+									'cache-key': cacheKey,
+								},
+							},
+						],
+					);
+					this.log.info(
+						`Vehicle ID: ${id} - Timestamp: ${timestamp} - Cache Hit`,
+					);
+					return cachedValue;
+				}
+
+				addDetailsToCurrentSpan({
+					'cache-hit': false,
+				});
+
+				const vehicleState = await this.store.withTransaction(
+					async (client) => {
+						const foundVehicle = await this.store.getVehicleById(client, id);
+						// Keeping business rules of errors in the service layer
+						if (!foundVehicle) {
+							throw new ServiceError('Vehicle not found', {
+								status: 404,
+								message: 'Vehicle not found',
+							});
+						}
+
+						const vehicleStateResult = await this.store.getVehicleStateByTime(
+							client,
+							{
+								id,
+								timestamp,
+							},
+						);
+
+						if (!vehicleStateResult) {
+							throw new ServiceError('Seller information not found', {
+								status: 404,
+								message: 'Seller information not found',
+							});
+						}
+						return vehicleStateResult;
 					},
 				);
-				return vehicleStateResult;
-			});
 
-			this.log.info(`Vehicle ID: ${id} - Timestamp: ${timestamp} - Cache Miss`);
-			await this.cacheStore.set(cacheKey, JSON.stringify(vehicleState));
+				this.log.info(
+					`Vehicle ID: ${id} - Timestamp: ${timestamp} - Cache Miss`,
+				);
+				await this.cacheStore.set(cacheKey, JSON.stringify(vehicleState));
 
-			return vehicleState;
-		} catch (error) {
-			this.log.error(`Error: ${error}`);
-			if (error instanceof ServiceError) {
-				throw error;
-			}
-
-			throw error;
-		}
+				return vehicleState;
+			},
+		);
 	};
 }

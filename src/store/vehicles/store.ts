@@ -4,6 +4,7 @@ import { Pool, PoolClient } from 'pg';
 import pool from '../../config/database';
 import { ServiceError } from '../../utils/Errors/Error';
 import Vehicles from '../../generated/types/public/Vehicles';
+import { tracerWrapper } from '../../tracing/utils/utils';
 
 /**
  * Gone for a CTE approach to get the state of the vehicle at a given time.
@@ -76,81 +77,76 @@ export class Store {
 			timestamp: string;
 		},
 	): Promise<VehicleStateByTimeQueryResult> => {
-		try {
-			this.log.info(
-				`Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
-			);
+		return tracerWrapper<VehicleStateByTimeQueryResult>(
+			'Store - getVehicleStateByTime',
+			async () => {
+				try {
+					this.log.info(
+						`Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
+					);
 
-			const { rows } = await client.query<VehicleStateByTimeQueryResult>(
-				GET_VEHICLE_STATE_BY_TIME_QUERY,
-				[timestamp, id],
-			);
+					const { rows } = await client.query<VehicleStateByTimeQueryResult>(
+						GET_VEHICLE_STATE_BY_TIME_QUERY,
+						[timestamp, id],
+					);
 
-			if (rows.length === 0) {
-				throw new ServiceError('Seller information not found', {
-					status: 404,
-					message: 'Seller information not found',
-				});
-			}
+					return rows[0];
+				} catch (error) {
+					this.log.error(`Error: ${error}`);
 
-			return rows[0];
-		} catch (error) {
-			this.log.error(`Error: ${error}`);
+					if (error instanceof ServiceError) {
+						throw error;
+					}
 
-			if (error instanceof ServiceError) {
-				throw error;
-			}
-
-			throw new Error('Internal Server Error');
-		}
+					throw new Error('Internal Server Error');
+				}
+			},
+		);
 	};
 
 	public getVehicleById = async (
 		client: PoolClient,
 		id: number,
 	): Promise<Vehicles> => {
-		try {
-			this.log.info(`Vehicle ID: ${id} - Get Vehicle By ID`);
+		return tracerWrapper<Vehicles>('Store - getVehicleById', async () => {
+			try {
+				this.log.info(`Vehicle ID: ${id} - Get Vehicle By ID`);
 
-			const { rows } = await client.query<Vehicles>(
-				'SELECT * FROM vehicles WHERE id = $1',
-				[id],
-			);
+				const { rows } = await client.query<Vehicles>(
+					'SELECT * FROM vehicles WHERE id = $1 LIMIT 1',
+					[id],
+				);
 
-			if (rows.length === 0) {
-				throw new ServiceError('Vehicle not found', {
-					status: 404,
-					message: 'Vehicle not found',
-				});
+				return rows[0];
+			} catch (error) {
+				this.log.error(`Error: ${error}`);
+
+				if (error instanceof ServiceError) {
+					throw error;
+				}
+
+				throw new Error('Internal Server Error');
 			}
-
-			return rows[0];
-		} catch (error) {
-			this.log.error(`Error: ${error}`);
-
-			if (error instanceof ServiceError) {
-				throw error;
-			}
-
-			throw new Error('Internal Server Error');
-		}
+		});
 	};
 
 	public withTransaction = async <T>(
 		callback: (client: PoolClient) => Promise<T>,
 	): Promise<T> => {
-		const client = await this.getClient();
-		try {
-			this.log.info('Starting transaction');
-			const result = await callback(client);
-			await this.commit(client);
-			this.log.info('Transaction committed');
-			return result;
-		} catch (error) {
-			await this.rollback(client);
-			this.log.error(`Transaction rolled back - Error: ${error}`);
-			throw error;
-		}
+		return tracerWrapper<T>('Store - withTransaction', async () => {
+			const client = await this.getClient();
+			try {
+				this.log.info('Starting transaction');
+				const result = await callback(client);
+				await this.commit(client);
+				this.log.info('Transaction committed');
+				return result;
+			} catch (error) {
+				await this.rollback(client);
+				this.log.error(`Transaction rolled back - Error: ${error}`);
+				throw error;
+			}
+		});
 	};
 
 	public async closePool() {
