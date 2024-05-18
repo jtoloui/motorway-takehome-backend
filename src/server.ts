@@ -11,40 +11,22 @@ import { tracingMiddleware } from './middleware/otelTraceMiddleware';
 import { SpanStatusCode } from '@opentelemetry/api';
 
 import { setSpanStatus } from './tracing/utils/utils';
+import { InboundOutboundMiddleware } from './middleware/inboundOutboundMiddleware';
 
 const config = newConfig.getInstance().validate().getConfig();
 
 const app = express();
-app.use(tracingMiddleware);
 
-// Middleware to log HTTP Inbound requests to track timing across whole return path
-app.use((req: Request, res: Response, next: NextFunction) => {
-	const logger = config.newLogger(config.LOG_LEVEL, 'Routes');
-	const start = process.hrtime();
-	const calculateResponseTime = () => {
-		const diff = process.hrtime(start);
-		return (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(3);
-	};
-
-	logger.info(
-		`Request ID: ${req.requestId}- HTTP (Inbound) ${req.method} ${req.url}`,
-	);
-
-	res.on('finish', () => {
-		logger.info(
-			`Request ID: ${req.requestId} - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage} - ${calculateResponseTime()}ms`,
-		);
-	});
-	next();
-});
-
+const logger = config.newLogger(config.LOG_LEVEL, 'Routes');
 app.use(
+	requestIdMiddleware,
+	tracingMiddleware,
+	InboundOutboundMiddleware(logger),
 	express.json(),
 	express.urlencoded({ extended: true }),
 	cors(),
 	helmet(),
 );
-app.use(requestIdMiddleware);
 
 app.use(
 	'/api/v1',

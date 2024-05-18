@@ -1,4 +1,3 @@
-import * as dotenv from 'dotenv';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import {
 	AlwaysOnSampler,
@@ -13,8 +12,10 @@ import opentelemetry, {
 	DiagConsoleLogger,
 	DiagLogLevel,
 } from '@opentelemetry/api';
+import { newConfig } from '../config/config';
 
-dotenv.config();
+const config = newConfig.getInstance().getConfig();
+const logger = config.newLogger(config.LOG_LEVEL, 'Tracing');
 // used for debugging tracing issues
 // opentelemetry.diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
@@ -42,4 +43,6 @@ registerInstrumentations({
 
 opentelemetry.trace.getTracer(serviceName);
 
-console.log(`Tracing initialized for service: ${serviceName}`);
+logger.info(`Tracing initialized for service: ${serviceName}`);
+
+export const tracer = opentelemetry.trace.getTracer(serviceName);
