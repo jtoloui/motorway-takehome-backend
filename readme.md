@@ -16,11 +16,13 @@ This service allows you to lookup a given vehicle state from the sellers logs fr
 		- [Linting/Formatting](#lintingformatting)
 	- [Database](#database)
 		- [Generating Types](#generating-types)
+	- [Tracing](#tracing)
 
 
 ## Requirements
-- docker (https://docs.docker.com/get-docker/)
-- node v20 (https://nodejs.org/en/download)
+- [docker](https://docs.docker.com/get-docker/)
+- [node v20](https://nodejs.org/en/download)
+- [make](https://www.gnu.org/software/make/) - if you're on a mac you should already have this installed
 
 ## Setup
 To setup the service you will need to perform the following steps
@@ -55,8 +57,8 @@ To setup the service you will need to perform the following steps
 ### Local development
 
 1. run npm install
-2. `docker compose up -d`  - the `-d` flag allows you to run this in the background rather than keeping it live based on your terminal window.
-3. create your `.env` file - you can copy the [.env.template](/.env.template) file
+2. create your `.env` file - you can copy the [.env.template](/.env.template) file
+3. run `make dockerComposeUp` to start the database and memcache server and to spin down the services run `make dockerComposeDown`
 4. run `npm run dev` to start the service <a href="http://localhost:4000/api/v1">localhost:4000/api/v1</a>
 
 Once you're up and running in development mode you can also access the swagger docs at <a href="http://localhost:4000/api/v1/docs">localhost:4000/api/v1/docs</a>.
@@ -174,3 +176,9 @@ The drawback however doesn't mean we could be more prone to SQL injection attack
 
 ### Generating Types
 This service generates it's database types using [kanel](https://github.com/kristiandupont/kanel)
+
+
+## Tracing
+This service uses OpenTelemetry to trace the requests through the system. The traces are sent to a Jaeger instance which is spun up using docker-compose. The traces are sent to Jaeger using an [otel-collector](./docker/otel-collector-config.yml) seen in the docker folder.
+
+To view the traces in local development or production mode you can access the Jaeger UI at <a href="http://localhost:16686">localhost:16686</a>
