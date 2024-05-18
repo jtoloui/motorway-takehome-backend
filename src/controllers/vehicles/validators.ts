@@ -1,3 +1,4 @@
+import { tracer } from '../../tracing/tracer';
 import { ServiceError } from '../../utils/Errors/Error';
 import { z } from 'zod';
 
@@ -18,6 +19,7 @@ export const ParseGetVehicleStateByTimeRequest = (request: {
 	id: string;
 	timestamp: string;
 }) => {
+	const span = tracer.startSpan('ParseGetVehicleStateByTimeRequest');
 	const { id, timestamp } = request;
 	const cleanId = id.trim();
 
@@ -36,6 +38,7 @@ export const ParseGetVehicleStateByTimeRequest = (request: {
 		});
 	}
 
+	span.end();
 	return {
 		id: parseInt(cleanId, 10),
 		timestamp,

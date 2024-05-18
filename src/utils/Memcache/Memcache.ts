@@ -3,7 +3,7 @@ import memjs from 'memjs';
 import { ControllerConfig } from '../../types/controllers';
 import { newConfig } from '../../config/config';
 import { tracer } from '../../tracing/tracer';
-import { SpanKind, SpanStatusCode, context, trace } from '@opentelemetry/api';
+import { SpanKind, SpanStatusCode, context } from '@opentelemetry/api';
 
 const envConfig = newConfig.getInstance().getConfig();
 

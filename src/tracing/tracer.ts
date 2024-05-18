@@ -8,10 +8,7 @@ import { registerInstrumentations } from '@opentelemetry/instrumentation';
 import { Resource } from '@opentelemetry/resources';
 import { SEMRESATTRS_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import opentelemetry, {
-	DiagConsoleLogger,
-	DiagLogLevel,
-} from '@opentelemetry/api';
+import opentelemetry from '@opentelemetry/api';
 import { newConfig } from '../config/config';
 
 const config = newConfig.getInstance().getConfig();

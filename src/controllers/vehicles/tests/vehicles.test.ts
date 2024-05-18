@@ -1,12 +1,5 @@
 import request from 'supertest';
-import logger from '../../../config/logger';
-import { ControllerConfig } from '../../../types/controllers';
 import app from '../../../server';
-
-const config: ControllerConfig = {
-	loggerInstance: (level, name) => logger(level, name),
-	logLevel: '',
-};
 
 describe('Vehicles Controller', () => {
 	afterAll(async () => {
@@ -65,7 +58,7 @@ describe('Vehicles Controller', () => {
 	});
 
 	test('GET /unknown', async () => {
-		const response = await request(app).get('/api/v1/unknown');
+		const response = await request(app).get('/anything');
 		expect(response.status).toBe(404);
 		expect(response.body).toEqual({ message: 'Not Found' });
 	});

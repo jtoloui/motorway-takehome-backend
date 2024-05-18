@@ -10,7 +10,10 @@ export const router = (config: ControllerConfig): Router => {
 
 	routes.get(
 		'/vehicles/:id/state/:timestamp',
-		traceWithDefer(VehiclesController.getVehicleStateByTime),
+		traceWithDefer(
+			VehiclesController.getVehicleStateByTime,
+			'Router - getVehicleStateByTime',
+		),
 	);
 
 	return routes;

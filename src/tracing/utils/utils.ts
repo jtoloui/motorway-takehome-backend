@@ -1,9 +1,24 @@
-import { context, trace, Attributes, SpanStatusCode } from '@opentelemetry/api';
+import {
+	context,
+	trace,
+	Attributes,
+	SpanStatusCode,
+	Span,
+} from '@opentelemetry/api';
+import { tracer } from '../tracer';
+import { NextFunction, Request, Response } from 'express';
+import { ServiceError } from '../../utils/Errors/Error';
 
 interface Event {
 	name: string;
 	attributes?: Attributes;
 }
+
+type RouteHandler<T extends Request, U> = (
+	req: T,
+	res: Response,
+	next: NextFunction,
+) => Promise<U>;
 
 export function addDetailsToCurrentSpan(
 	attributes?: Attributes,
@@ -24,40 +39,44 @@ export function addDetailsToCurrentSpan(
 	}
 }
 
-// wrap all routes in a tracing span to capture the request/response + record any errors
-export function traceWithDefer<T>(
-	func: (...args: any[]) => Promise<T>,
-): (...args: any[]) => Promise<T> {
-	return async function (...args: any[]): Promise<T> {
-		const span = trace.getSpan(context.active());
+// Router middleware to mimic similar go patterns for a defer trace log
+export function traceWithDefer<T extends Request, U>(
+	func: RouteHandler<T, U>,
+	spanName: string,
+): RouteHandler<T, U> {
+	return async function (
+		req: T,
+		res: Response,
+		next: NextFunction,
+	): Promise<U> {
+		const span = tracer.startSpan(spanName, undefined, context.active());
+
 		try {
-			const result = await func(...args);
-			return result;
+			return await context.with(trace.setSpan(context.active(), span), () =>
+				func(req, res, next),
+			);
 		} catch (error) {
-			if (error instanceof Error) {
-				if (span) {
-					span.setStatus({
-						code: SpanStatusCode.ERROR,
-						message: error.message,
-					});
-					span.recordException(error as Error);
-				}
+			if (error instanceof Error || error instanceof ServiceError) {
+				span.setStatus({
+					code: SpanStatusCode.ERROR,
+					message: error.message,
+				});
+				span.recordException(error);
 			}
+			next(error);
 			throw error;
 		} finally {
-			if (span) {
-				span.end();
-			}
+			span.end();
 		}
 	};
 }
 
 export function setSpanStatus(status: SpanStatusCode, message: string): void {
-	const span = trace.getSpan(context.active());
-	if (span) {
-		span.setStatus({
-			code: status,
-			message,
-		});
-	}
+	let span = tracer.startSpan(message, undefined, context.active());
+	span.setStatus({
+		code: status,
+		message,
+	});
+
+	span.end();
 }

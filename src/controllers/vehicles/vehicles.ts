@@ -5,11 +5,19 @@ import { ParseGetVehicleStateByTimeRequest } from './validators';
 import { ServiceError } from '../../utils/Errors/Error';
 import { Vehicles as VehicleService } from '../../services/vehicles/service';
 import { VehicleStateByTimeQueryResult } from '../../store/vehicles/store';
+import { tracer } from '../../tracing/tracer';
+import { context } from '@opentelemetry/api';
 
-export interface GetVehicleStateByTimeRequest {
+export interface ParamsDictionary {
+	[key: string]: string;
+}
+interface GetVehicleStateByTimeParams extends ParamsDictionary {
 	id: string;
 	timestamp: string;
 }
+
+export interface GetVehicleStateByTimeRequest
+	extends Request<GetVehicleStateByTimeParams> {}
 
 type GetVehicleStateByTimeResponse = {
 	id: number;
@@ -36,10 +44,15 @@ export class Vehicles {
 	}
 
 	public getVehicleStateByTime = async (
-		req: Request<GetVehicleStateByTimeRequest>,
+		req: GetVehicleStateByTimeRequest,
 		res: Response,
 	): Promise<Response> => {
 		try {
+			const span = tracer.startSpan(
+				'getVehicleStateByTime',
+				undefined,
+				context.active(),
+			);
 			const { id, timestamp } = req.params;
 			this.log.info(
 				`Request ID: ${req.requestId} - Vehicle ID: ${id} - Timestamp: ${timestamp} - Get Vehicle State By Time`,
@@ -53,6 +66,7 @@ export class Vehicles {
 			const vehicleData =
 				await this.service.getVehicleStateByTime(cleanPayload);
 
+			span.end();
 			return res.status(200).json({
 				...this.getVehicleStateByTimeResponseMapper(vehicleData),
 			});
@@ -74,6 +88,13 @@ export class Vehicles {
 	private getVehicleStateByTimeResponseMapper = (
 		vehicleData: VehicleStateByTimeQueryResult,
 	): GetVehicleStateByTimeResponse => {
+		const span = tracer.startSpan(
+			'getVehicleStateByTimeResponseMapper',
+			undefined,
+			context.active(),
+		);
+
+		span.end();
 		return {
 			id: vehicleData.id,
 			make: vehicleData.make,

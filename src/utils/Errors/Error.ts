@@ -21,7 +21,6 @@ export class ServiceError extends Error {
 			Error.captureStackTrace(this, this.constructor);
 		}
 
-		console.log(this.stack);
 		addDetailsToCurrentSpan({
 			stack: this.stack,
 		});
