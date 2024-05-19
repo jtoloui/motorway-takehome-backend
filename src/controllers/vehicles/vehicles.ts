@@ -12,7 +12,14 @@ import { VehicleStateByTimeQueryResult } from '../../store/vehicles/store';
 import { tracer } from '../../tracing/tracer';
 import { context } from '@opentelemetry/api';
 
-export class Vehicles {
+interface VehiclesController {
+	getVehicleStateByTime: (
+		req: GetVehicleStateByTimeRequest,
+		res: Response,
+	) => Promise<Response>;
+}
+
+export class Vehicles implements VehiclesController {
 	private static instance: Vehicles;
 	private log: Logger;
 	private service: VehicleService;

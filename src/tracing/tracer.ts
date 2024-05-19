@@ -11,14 +11,24 @@ import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentation
 import opentelemetry from '@opentelemetry/api';
 import { newConfig } from '../config/config';
 
+/**
+ * Tracing configuration
+ *
+ * This file is responsible for setting up the tracing configuration for the application.
+ * It uses the OpenTelemetry SDK to create a new tracer provider and register it.
+ *
+ * You will also notice I'm using `getNodeAutoInstrumentations` to automatically instrument all the supported libraries.
+ * you can use the env OTEL_NODE_ENABLED_INSTRUMENTATIONS to enable specific instrumentations.
+ * e.g. OTEL_NODE_ENABLED_INSTRUMENTATIONS=pg,http,express,winston
+ */
 const config = newConfig.getInstance().getConfig();
 const logger = config.newLogger(config.LOG_LEVEL, 'Tracing');
 // used for debugging tracing issues
 // opentelemetry.diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
 
-const serviceName = process.env.OTEL_SERVICE_NAME || 'default-service';
+const serviceName = config.OTEL_SERVICE_NAME || 'default-service';
 const traceExporterUrl =
-	process.env.OTEL_TRACE_EXPORTER_URL || 'http://localhost:4318/v1/traces';
+	config.OTEL_TRACE_EXPORTER_URL || 'http://localhost:4318/v1/traces';
 
 const traceExporter = new OTLPTraceExporter({
 	url: traceExporterUrl,

@@ -11,7 +11,22 @@ import {
 	tracerWrapper,
 } from '../../tracing/utils/utils';
 
-export class Vehicles {
+interface VehiclesService {
+	getVehicleStateByTime: ({
+		id,
+		timestamp,
+	}: {
+		id: number;
+		timestamp: string;
+	}) => Promise<VehicleStateByTimeQueryResult>;
+}
+
+/**
+ * The vehicles service class
+ * This class handles all the business logic + communicates with the store and cache layer
+ */
+
+export class Vehicles implements VehiclesService {
 	private static instance: Vehicles;
 	private log: Logger;
 	private store: Store;

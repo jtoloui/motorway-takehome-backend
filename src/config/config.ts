@@ -16,6 +16,13 @@ export const ConfigSchema = z.object({
 	log: z.instanceof(Logger),
 	newLogger: LoggerSchema,
 	MEMCACHE_SERVERS: z.string(),
+	OTEL_NODE_ENABLED_INSTRUMENTATIONS: z.string(),
+	OTEL_NODE_RESOURCE_DETECTORS: z.string().optional(),
+	OTEL_TRACE_EXPORTER_URL: z.string(),
+	OTEL_LOG_LEVEL: z.string().optional(),
+	OTEL_SERVICE_NAME: z.string(),
+	OTEL_TRACES_EXPORTER: z.string(),
+	NODE_ENV: z.string(),
 });
 
 export type ConfigType = z.infer<typeof ConfigSchema>;
@@ -76,6 +83,17 @@ export class newConfig {
 			log: this.log,
 			newLogger: logger,
 			MEMCACHE_SERVERS: process.env.MEMCACHE_SERVERS || '',
+			OTEL_NODE_ENABLED_INSTRUMENTATIONS:
+				process.env.OTEL_NODE_ENABLED_INSTRUMENTATIONS || '',
+			OTEL_NODE_RESOURCE_DETECTORS:
+				process.env.OTEL_NODE_RESOURCE_DETECTORS || '',
+			OTEL_TRACE_EXPORTER_URL:
+				process.env.OTEL_TRACE_EXPORTER_URL ||
+				'http://localhost:4318/v1/traces',
+			OTEL_LOG_LEVEL: process.env.OTEL_LOG_LEVEL || 'info',
+			OTEL_SERVICE_NAME: process.env.OTEL_SERVICE_NAME || 'default-service',
+			OTEL_TRACES_EXPORTER: process.env.OTEL_TRACES_EXPORTER || 'otlp',
+			NODE_ENV: process.env.NODE_ENV || 'development',
 		};
 	}
 

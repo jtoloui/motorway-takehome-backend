@@ -50,7 +50,32 @@ export type VehicleStateByTimeQueryResult = {
 	timestamp: string;
 };
 
-export class Store {
+/**
+ * The store service interface
+ *
+ * This store class is responsible for all the database operations and holds no business logic
+ * The store layer doesn't use any ORM or query builder to keep the code simple and easy to understand
+ * This also means it can be more extensible and easier to maintain
+ */
+
+interface StoreService {
+	getVehicleStateByTime: (
+		client: PoolClient,
+		{
+			id,
+			timestamp,
+		}: {
+			id: number;
+			timestamp: string;
+		},
+	) => Promise<VehicleStateByTimeQueryResult>;
+	getVehicleById: (client: PoolClient, id: number) => Promise<Vehicles>;
+	withTransaction: <T>(
+		callback: (client: PoolClient) => Promise<T>,
+	) => Promise<T>;
+}
+
+export class Store implements StoreService {
 	private static instance: Store;
 	private log: Logger;
 	private pool: Pool;

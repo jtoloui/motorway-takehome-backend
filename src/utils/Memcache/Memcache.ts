@@ -7,13 +7,20 @@ import { tracerWrapper } from '../../tracing/utils/utils';
 
 const envConfig = newConfig.getInstance().getConfig();
 
+interface MemcacheService {
+	set: (key: string, value: string, ttl: number) => Promise<boolean>;
+	get: <T>(key: string) => Promise<T | null>;
+	flush: () => Promise<void>;
+	close: () => void;
+}
+
 /**
  * Memcache class to interact with memcache
  * This class also has tracing implemented manually
  * this is due to the fact that memjs doesn't have a supported instrumentation library
  */
 
-export class Memcache {
+export class Memcache implements MemcacheService {
 	private static instance: Memcache;
 	private log: Logger;
 	private memcacheClient: memjs.Client;
