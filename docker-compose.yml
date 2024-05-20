@@ -17,6 +17,8 @@ services:
       - POSTGRES_DB=motorway
     ports:
       - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
   db_test:
     image: motorway-test-backend
     container_name: motorway-test-backend_test
@@ -96,6 +98,9 @@ services:
       - app
     networks:
       - backend
+
+volumes:
+  postgres_data:
 
 networks:
   backend:

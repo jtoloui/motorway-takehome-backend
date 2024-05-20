@@ -1,7 +1,14 @@
 dockerComposeUp:
-	cd ./docker && docker-compose up -d
+	cd ./docker && docker-compose up -d --force-recreate
 
 dockerComposeDown:
-	cd ./docker && docker-compose down
+	cd ./docker && docker-compose down --remove-orphans	--volumes
 
-.PHONY: dockerComposeUp dockerComposeDown
+
+pruneAllVolumnes:
+	docker volume prune -f
+
+removeServiceDataStoreImage:
+	docker image rm motorway-test-backend
+
+.PHONY: dockerComposeUp dockerComposeDown pruneAllVolumnes removeServiceDataStoreImage

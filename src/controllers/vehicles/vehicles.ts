@@ -44,11 +44,6 @@ export class Vehicles implements VehiclesController {
 		req: GetVehicleStateByTimeRequest,
 		res: Response,
 	): Promise<Response> => {
-		const span = tracer.startSpan(
-			'getVehicleStateByTime',
-			undefined,
-			context.active(),
-		);
 		try {
 			const { id, timestamp } = req.params;
 			this.log.info(
@@ -81,8 +76,6 @@ export class Vehicles implements VehiclesController {
 			return res.status(500).json({
 				message: 'Internal Server Error',
 			});
-		} finally {
-			span.end();
 		}
 	};
 
